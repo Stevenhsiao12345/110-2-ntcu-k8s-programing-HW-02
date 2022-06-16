@@ -60,21 +60,21 @@ func main() {
 	sm := createService(clientset)
 
 	go func() {
-		for {
-			read, err := clientset.
-				AppsV1().
-				Deployments(namespace).
-				Get(
-					context.Background(),
-					dm.GetName(),
-					metav1.GetOptions{},
-				)
-			if err != nil {
-				panic(err.Error())
-			}
+		for{
+		read, err := clientset.
+			AppsV1().
+			Deployments(namespace).
+			Get(
+				context.Background(),
+				dm.GetName(),
+				metav1.GetOptions{},
+			)
+		if err != nil {
+			panic(err.Error())
+		}
 
-			fmt.Printf("Read Deployment %s/%s\n", namespace, read.GetName())
-			time.Sleep(5 * time.Second)
+		fmt.Printf("Read Deployment %s/%s\n", namespace, read.GetName())
+		time.Sleep(time.Second)
 		}
 	}()
 
@@ -94,7 +94,7 @@ func int32Ptr(i int32) *int32 { return &i }
 func createDeployment(client kubernetes.Interface) *appv1.Deployment {
 	dm := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "apa000dep11",
+			Name: "orange-app1",
 			Labels: map[string]string{
 				"ntcu-k8s": "hw2",
 			},
@@ -184,8 +184,11 @@ var portnum int32 = 80
 func createService(client kubernetes.Interface) *corev1.Service {
 	sm := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "api000ser",
+			Name: "orange-service",
+			Labels: map[string]string{
+				"ntcu-k8s": "hw2",
 		},
+},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
 				"ntcu-k8s": "hw2",
@@ -217,4 +220,39 @@ func createService(client kubernetes.Interface) *corev1.Service {
 	return sm
 }
 
+func createConfigMap(client kubernetes.Interface) *corev1.ConfigMap {
+	cm := &corev1.ConfigMap{Data: map[string]string{"foo": "bar"}}
+	cm.Namespace = namespace
+	cm.GenerateName = "informer-typed-simple-"
 
+	cm, err := client.
+		CoreV1().
+		ConfigMaps(namespace).
+		Create(
+			context.Background(),
+			cm,
+			metav1.CreateOptions{},
+		)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Printf("Created ConfigMap %s/%s\n", cm.GetNamespace(), cm.GetName())
+	return cm
+}
+
+func deleteConfigMap(client kubernetes.Interface, cm *corev1.ConfigMap) {
+	err := client.
+		CoreV1().
+		ConfigMaps(cm.GetNamespace()).
+		Delete(
+			context.Background(),
+			cm.GetName(),
+			metav1.DeleteOptions{},
+		)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Printf("Deleted ConfigMap %s/%s\n", cm.GetNamespace(), cm.GetName())
+}
